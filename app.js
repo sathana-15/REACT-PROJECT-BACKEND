@@ -7,6 +7,16 @@ const app = express();
 app.use(express.json());
 app.use(cors()); 
 
+const bcrypt=require("bcrypt")
+const jwt = require("jsonwebtoken");
+
+const authMiddleware=require("./middleware/auth");
+
+
+app.use(express.json());
+app.use(cors());
+
+
 mongoose.connect("mongodb+srv://sathanard2023cse:sathu2828@cluster0.7wxev.mongodb.net/dressShop").then(()=>{
   console.log("Connect to MongoDb");
 })
@@ -27,7 +37,14 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model('Product', productSchema);
 
+const userSchema=new mongoose.Schema({                               // creating the schema using this we can create the model
+  id:{type:String,required:true,unique:true},
+  uname:{type:String,required:true},
+  email:{type:String,required:true,unique:true},
+  password:{type:String,required:true}
+})
 
+const User=mongoose.model("User",userSchema);
 
 
 app.get('/api/products', async (req, res) => {
@@ -107,6 +124,55 @@ app.delete('/api/products/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+app.post("/register",async(req,res)=>{
+  const{email,uname,password}=req.body;
+  try{
+  const user=await User.findOne({email});
+  if(user){
+      return res.status(400).json({message:"Email alreday exists"});
+  }
+const hashedPassword=await bcrypt.hash(password,10);
+const newUser=new User({
+  id:uuidv4,
+  email,
+  uname,
+  password :hashedPassword,
+});
+await newUser.save();
+res.status(200).json({meassage:"User created successfully"});
+  }
+  catch(error){
+      res.status(500).json({meassage:"Internal server error"});
+  }
+});
+//Login
+
+app.post("/login",async (req,res)=>{
+  const{email,password}=req.body;
+  try{
+      const user=await User.findOne({email});
+      if(!user){
+          return res.status(400).json({message:"Invaild Email"});
+      }
+
+      const isValidPassword=await bcrypt.compare(password,user.password);
+
+      if(!isValidPassword){
+          return res.status(400).json({message:"Invaild Password"});
+      }
+
+      // CREATING A TOKEN WITH 3 ARGUMNETS 
+      const token=jwt.sign({id:user.id},"my_secret",{expiresIn:"1h"});
+      res.status(200).json({token});
+
+  }
+  catch(error){
+      return res.status(500).json({message:"Internal server error"});
+  }
+
+});
+
 
 app.listen(3000, () => {
   console.log('Backend server is running on http://localhost:3000');
