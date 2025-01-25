@@ -14,12 +14,11 @@ const authMiddleware=require("./middleware/auth");
 
 
 app.use(express.json());
-app.use(cors());
 
 
-mongoose.connect("mongodb+srv://sathanard2023cse:sathu2828@cluster0.7wxev.mongodb.net/dressShop").then(()=>{
-  console.log("Connect to MongoDb");
-})
+
+mongoose.connect("mongodb+srv://sathanard2023cse:sathu2828@cluster0.7wxev.mongodb.net/dressShop").then(()=>
+  console.log("Connect to MongoDb"))
   .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
 
@@ -47,7 +46,9 @@ const userSchema=new mongoose.Schema({                               // creating
 const User=mongoose.model("User",userSchema);
 
 
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', authMiddleware,async (req, res) => {
+  console.log(req.user)
+
   try {
     const products = await Product.find();
     res.status(200).json(products);
@@ -134,16 +135,17 @@ app.post("/register",async(req,res)=>{
   }
 const hashedPassword=await bcrypt.hash(password,10);
 const newUser=new User({
-  id:uuidv4,
+  id:uuidv4(),
   email,
   uname,
   password :hashedPassword,
 });
 await newUser.save();
-res.status(200).json({meassage:"User created successfully"});
+res.status(200).json({message:"User created successfully"});
   }
   catch(error){
-      res.status(500).json({meassage:"Internal server error"});
+    console.error(error);
+      res.status(500).json({message:"Internal server error"});
   }
 });
 //Login
