@@ -10,7 +10,7 @@ const authMiddleware = require("./middleware/auth");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
 
 
 app.use(express.json());
@@ -58,6 +58,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
+
 app.post("/api/products/upload", async (req, res) => {
   const { name, description, price, category, imageUrl } = req.body; // Accept imageUrl directly
 
@@ -82,6 +83,17 @@ app.post("/api/products/upload", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 
 
 app.get("/api/products/:id", async (req, res) => {
@@ -141,7 +153,7 @@ app.post("/login", async (req, res) => {
 });
 
 
-
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 app.use(express.static(path.join(__dirname, "dist")));
 
