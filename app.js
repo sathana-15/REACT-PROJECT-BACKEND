@@ -8,11 +8,9 @@ const path = require("path");
 const multer = require("multer");
 const authMiddleware = require("./middleware/auth");
 
-
-
 const app = express();
 const PORT = process.env.PORT || 5000;
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 
 app.use(express.json());
@@ -20,13 +18,13 @@ app.use(cors());
 
 
 
-// MongoDB connection
+
 mongoose
   .connect("mongodb+srv://sathanard2023cse:sathu2828@cluster0.7wxev.mongodb.net/dressShop")
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
-// Schemas and Models
+
 const productSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, default: uuidv4 },
   name: { type: String, required: true },
@@ -47,34 +45,33 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// Multer setup for file upload
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Ensure this folder exists
+    cb(null, "uploads/"); // Folder to store uploaded images
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+    cb(null, Date.now() + "-" + file.originalname); // Naming convention for uploaded files
   },
 });
+
 const upload = multer({ storage });
 
-// Route for handling product upload
-app.post("/api/products/upload", upload.single("image"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-  console.log("File uploaded:", req.file); // Check if file is coming in the request
 
-  const { name, description, price, category } = req.body;
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+app.post("/api/products/upload", async (req, res) => {
+  const { name, description, price, category, imageUrl } = req.body; // Accept imageUrl directly
+
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Image URL is required" });
+  }
 
   const newProduct = new Product({
-    id:uuidv4(),
+    id: uuidv4(),
     name,
     description,
     price,
     category,
-    imageUrl,
+    imageUrl, // Directly storing the image URL
   });
 
   try {
@@ -86,15 +83,6 @@ app.post("/api/products/upload", upload.single("image"), async (req, res) => {
   }
 });
 
-// Other Product Routes
-app.get("/api/products", async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.status(200).json(products);
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
 
 app.get("/api/products/:id", async (req, res) => {
   try {
@@ -116,7 +104,9 @@ app.get("/api/products/casual", async (req, res) => {
 });
 
 
-// Register & Login Routes
+
+
+
 app.post("/register", async (req, res) => {
   const { email, uname, password } = req.body;
   try {
@@ -149,6 +139,9 @@ app.post("/login", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
+
 
 app.use(express.static(path.join(__dirname, "dist")));
 
