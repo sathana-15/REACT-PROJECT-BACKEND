@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 const multer = require("multer");
 const authMiddleware = require("./middleware/auth");
-const cors = require("cors");
+
 
 
 const app = express();
